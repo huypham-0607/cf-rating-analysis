@@ -1,4 +1,4 @@
-# cf-rating-predictor-v2
+# Codeforces Rating System Overview
 Improved rating predictor for Codeforces
 
 ## References
