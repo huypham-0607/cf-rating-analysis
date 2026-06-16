@@ -25,7 +25,7 @@ Where $P_{i,j}$ is the probability that Player $i$ will beat player $j$ in a con
 
 Before the contest, an expected ranking $seed_{i}$ is calculated for each player.
 
-$seed_{i} = \sum_{\substack{j=1 \\ j \neq i}}^{n} P_{i,j} + 1$
+$seed_{i} = \sum_{\substack{j=1 \\ j \neq i}}^{n} P_{j,i} + 1$
 
 That is, sum over all other players of probability of beating the $i$-th player (offset by $1$ due to indexing).
 
@@ -46,7 +46,7 @@ This model works conceptually, but there are 2 main issues we have to address
 
 To combat this. Codeforces employs two tactics.
 
-First, $r_{i} = r_{i} + inc$, where $inc = \frac{\sum_{i = 1}^{n}d_{i}}{n} - 1$. This makes sum of all $d_{i}$ near zero and non-positive at the same time.
+First, $r_{i} = r_{i} + inc$, where $inc = \frac{-\sum_{i = 1}^{n}d_{i}}{n} - 1$. This makes sum of all $d_{i}$ near zero and non-positive at the same time.
 
 Then, we choose a group of $min(n,4\sqrt{n})$ highest rated players before the contest. Lets call this group $S$. Then, set $r_{i} = r_{i} + inc$ for all participants in contest, where $inc = min(max(-\frac{\sum_{i}^{i \in S}d_{i}}{|S|},-10),0)$. That is, $inc$ is the negative of average $d_{i}$ of all players in $S$, bounded by $[-10,0]$
 
