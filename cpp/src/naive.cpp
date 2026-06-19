@@ -68,7 +68,7 @@ int main() {
     for (int i=0; i<n; i++){
         delta_adj[i] += (-t)/n - 1;
     }
-    std::vector<double> old_rating_order(n);
+    std::vector<int> old_rating_order(n);
     std::iota(old_rating_order.begin(), old_rating_order.end(), 0);
     std::sort(old_rating_order.begin(), old_rating_order.end(),
               [&](int i, int j){return (players[i].rating > players[j].rating);});

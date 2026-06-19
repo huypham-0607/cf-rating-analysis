@@ -1,3 +1,11 @@
 init-info.md
+development-notes.md
+
+data/*
+!data/.gitkeep
+
 CLAUDE.md
 *.cph
+.venv
+*__pycache__
+*.vscode
