@@ -1,5 +1,5 @@
 init-info.md
-development-notes.md
+dev-notes.md
 
 data/*
 !data/.gitkeep

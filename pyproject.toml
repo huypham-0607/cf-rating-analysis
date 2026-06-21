@@ -15,7 +15,8 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["python/src/fetch_cf_data",
-            "python/src/utils"]
+            "python/src/utils",
+            "python/src/cleaner"]
 
 # For Pylance to work properly
 [tool.pyright]

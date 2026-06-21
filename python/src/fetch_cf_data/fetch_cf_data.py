@@ -18,6 +18,7 @@
           is no result.
 
     Contest object: https://codeforces.com/apiHelp/objects#Contest
+    Rating changes object: https://codeforces.com/apiHelp/objects#RatingChange
 """
 
 import requests
@@ -36,7 +37,7 @@ CONTEST_RATING_CHANGE_SUFFIX = "contest.ratingChanges"
 PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
 
 class FetchCFData:
-    def __init__(self):
+    def __init__(self)->None:
         # timeout is the value (in seconds) client waits for server response.
         self.timeout: float = 5.0
 
@@ -56,7 +57,7 @@ class FetchCFData:
         # exist_ok=True prevents crashing when directory already exist.
         Path(PROJECT_ROOT/self.raw_dir).mkdir(parents=True, exist_ok=True)
 
-    def get_contest_list(self, is_forced: bool = False):
+    def get_contest_list(self, is_forced: bool = False)->None:
         if (not is_forced and Path(self.raw_dir/"contest_list.json").exists()):
             return
         
@@ -69,7 +70,7 @@ class FetchCFData:
         logger.info(f"Saved contests data to {dir}.")
 
         
-    def get_contest_rating_changes(self, contest_id: str, is_forced: bool = False):
+    def get_contest_rating_changes(self, contest_id: str, is_forced: bool = False)->None:
         self.raw_rating_changes_dir.mkdir(parents=True, exist_ok=True)
         if (not is_forced and Path(self.raw_rating_changes_dir/Path(contest_id+".json")).exists()):
             return
@@ -111,7 +112,7 @@ class FetchCFData:
                 time.sleep(self.backoff_base + self.backoff_inc * i)
         raise RuntimeError(f"Failed to fetch data: All {self.max_retries} attempts exhausted.")
     
-    def _save(self, dir: Path, data: list):
+    def _save(self, dir: Path, data: list)->None:
         try:
             with open(dir,'w') as f:
                 f.write(json.dumps(data))

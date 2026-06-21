@@ -17,9 +17,11 @@ with open(collector.raw_dir/"contest_list.json",'r') as f:
         contest_ids.append(obj["id"])
 
 for id in contest_ids:
-    if (id <= 600):
+    '''
+    if (id < 600):
         logger.warning(f"Skipping contest: Contest too old")
         continue
+    '''
     try:
         collector.get_contest_rating_changes(str(id))
     except RuntimeError as e:
