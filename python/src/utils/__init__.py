@@ -4,6 +4,8 @@ import json
 
 from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+
 def get_logger(name: str) -> logging.Logger:
     logger = logging.getLogger(name)
     if not logger.handlers:
@@ -24,14 +26,18 @@ def _load(dir: Path):
         raise e
     except FileNotFoundError as e:
         raise e
+    except Exception as e:
+        raise e
 
 def _save(dir: Path, data)->None:
     try:
         with open(dir,'w') as f:
             f.write(json.dumps(data))
-    except PermissionError:
-        raise RuntimeError("Write Failed: No write permission.")
-    except FileNotFoundError:
-        raise RuntimeError("Write Failed: File not found.")
-    except IsADirectoryError:
-        raise RuntimeError("Write Failed: Invalid Directory.")
+    except PermissionError as e:
+        raise e
+    except FileNotFoundError as e:
+        raise e
+    except IsADirectoryError as e:
+        raise e
+    except Exception as e:
+        raise e

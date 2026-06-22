@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <vector>
 #include <cmath>
+#include <chrono>
 #include <numeric>
 #include <algorithm>
+
 
 /*
     Calculate rating changes for each participant in a contest in O(n^2)
@@ -15,10 +17,10 @@
     r_old_n rank_n
 
     Output format:
-    seed_1 perf_1 delta_raw_1 delta_adjusted_1 new_rating_1
-    seed_2 perf_2 delta_raw_2 delta_adjusted_2 new_rating_2
+    seed_1 perf_1 delta_raw_1 delta_adjusted_1 delta_final_1 new_rating_1
+    seed_2 perf_2 delta_raw_2 delta_adjusted_2 delta_final_2 new_rating_2
     ...
-    seed_n perf_n delta_raw_n delta_adjusted_n new_rating_n
+    seed_n perf_n delta_raw_n delta_adjusted_n delta_final_n new_rating_n
 */
 
 struct player {
@@ -46,12 +48,14 @@ int compute_perf(const std::vector<player> &, int, double);
 
 int main() {
     int n; scanf("%d\n", &n);
-    generate_g_table();
+
     std::vector<player> players(n,player());
     for (int i=0; i<n; i++){
         scanf("%d %d", &players[i].rating, &players[i].ranking);
     }
-    
+
+    auto t0 = std::chrono::high_resolution_clock::now();
+    generate_g_table();
     std::vector<double> seed(n,0.0);
     std::vector<int> perf(n,0);
     std::vector<double> delta_raw(n,0.0);
@@ -82,9 +86,14 @@ int main() {
         delta_adj[i] += std::min(std::max((-t)/m,(double)-10),(double)0);
     }
     
+    auto t1 = std::chrono::high_resolution_clock::now();
+    double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+    fprintf(stderr, "%.3f\n", ms);
+    
     for (int i=0; i<n; i++){
-        printf("%f %d %f %f %d\n", seed[i], perf[i], delta_raw[i], delta_adj[i],
-               round(players[i].rating + delta_adj[i]));
+        int fdelta = round(delta_adj[i]);
+        printf("%f %d %f %f %d %d\n", seed[i], perf[i], delta_raw[i], delta_adj[i],
+               fdelta, players[i].rating + fdelta);
     }
 }
 

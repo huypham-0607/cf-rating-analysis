@@ -1,11 +1,18 @@
+# Local development notes
 init-info.md
 dev-notes.md
+validation-plan.md
 
+# Misc
 data/*
 !data/.gitkeep
 
+# Development tools
 CLAUDE.md
 *.cph
 .venv
 *__pycache__
 *.vscode
+
+# Build files
+cpp/build/

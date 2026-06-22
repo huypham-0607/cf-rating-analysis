@@ -7,3 +7,13 @@ Rating change predictor + analysis for Codeforces
 - Codeforces: Problem Difficulties - https://codeforces.com/blog/entry/62865 
 - An Elo-like System for Massive Multiplayer Competitions - https://arxiv.org/abs/2101.00400
 - New rating calculation for new accounts - https://codeforces.com/blog/entry/77890
+
+## Usage
+
+Build cpp source files
+
+```shell
+cd cpp
+cmake -B build
+cmake --build build
+```
