@@ -27,3 +27,4 @@ for id in contest_ids:
     except RuntimeError as e:
         logger.warning(f"Skipping contest: {type(e).__name__} {e}")
     logger.info(f"Finished collecting rating changes for contest id {id}.")
+    

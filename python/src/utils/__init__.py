@@ -13,7 +13,7 @@ def get_logger(name: str) -> logging.Logger:
     logger.setLevel(logging.INFO)
     return logger
 
-def _load(dir: Path)->list:
+def _load(dir: Path):
     try:
         with open(dir,'r') as f:
             data = json.load(f)
@@ -25,7 +25,7 @@ def _load(dir: Path)->list:
     except FileNotFoundError as e:
         raise e
 
-def _save(dir: Path, data: list)->None:
+def _save(dir: Path, data)->None:
     try:
         with open(dir,'w') as f:
             f.write(json.dumps(data))
