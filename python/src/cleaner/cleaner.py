@@ -84,6 +84,9 @@ class DataCleaner:
                 logger.warning(f"Read access denied for {raw_dir}")
                 continue
 
+            if not data:
+                logger.warning(f"Rating changes for contest id {contest["id"]} is empty, skipping...")
+                continue
             handles = set()
             rating_changes = []
 
@@ -197,7 +200,7 @@ class DataCleaner:
                     old_system_count += 1
 
                 for i in range (0,len(value)):
-                    if user_metadata[key]["use_new_system"] == 0 and i < ramp_up_rounds:
+                    if user_metadata[key]["use_new_system"] == 1 and i < ramp_up_rounds:
                         delta_hist[key][i]["true_old_rating"] = delta_hist[key][i]["old_rating"] + rating_offset[i]
                         delta_hist[key][i]["true_new_rating"] = delta_hist[key][i]["new_rating"] + rating_offset[i+1]
                     else:
@@ -235,6 +238,7 @@ class DataCleaner:
                 rating_changes = DataCleaner._load(dir)
             except Exception:
                 logger.warning(f"Unable to open contest with id {contest["id"]}.")
+                continue
             for rating_change in rating_changes:
                 handle = rating_change["handle"]
                 # logger.info(f"Adding true rating for handle {handle} for contest {contest["id"]} (ptr={ptr[handle]})")

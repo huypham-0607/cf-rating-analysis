@@ -6,7 +6,7 @@ from utils import get_logger
 logger = get_logger(__name__)
 
 collector = FetchCFData()
-collector.get_contest_list()
+collector.get_contest_list(True)
 logger.info(f"Finished collecting contest list.")
 
 contest_ids = [];
@@ -23,7 +23,7 @@ for id in contest_ids:
         continue
     '''
     try:
-        collector.get_contest_rating_changes(str(id))
+        collector.get_contest_rating_changes(str(id), True)
     except RuntimeError as e:
         logger.warning(f"Skipping contest: {type(e).__name__} {e}")
     logger.info(f"Finished collecting rating changes for contest id {id}.")

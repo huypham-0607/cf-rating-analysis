@@ -39,7 +39,7 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
 class FetchCFData:
     def __init__(self)->None:
         # timeout is the value (in seconds) client waits for server response.
-        self.timeout: float = 5.0
+        self.timeout: float = 8.0
 
         # backoff_base is the initial backoff delay if fetch failed.
         # backoff_inc is the value backoff delay increments by after failing.
@@ -47,7 +47,7 @@ class FetchCFData:
         self.backoff_inc: float = 2.0
 
         # max_retries is maximum no of retries if fetch failed.
-        self.max_retries: int = 3
+        self.max_retries: int = 5
 
         # Destination for fetched JSON data 
         self.raw_dir = Path(PROJECT_ROOT/"data/raw")

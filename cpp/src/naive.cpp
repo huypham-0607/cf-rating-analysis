@@ -1,10 +1,10 @@
 #include <stdio.h>
+#include <iostream>
 #include <vector>
 #include <cmath>
 #include <chrono>
 #include <numeric>
 #include <algorithm>
-
 
 /*
     Calculate rating changes for each participant in a contest in O(n^2)
@@ -30,8 +30,8 @@ struct player {
     player (int _rating=0, int _ranking=0): rating(_rating), ranking(_ranking) {};
 };
 
-constexpr int OFFSET = 5000;
-constexpr int G_SIZE = 10001;
+constexpr int OFFSET = 10000;
+constexpr int G_SIZE = 20001;
 double g[G_SIZE];
 
 // Generate reference table g (probabiltiy for i to beat j with rating delta d).
@@ -47,11 +47,16 @@ double get_seed(const std::vector<player> &, int, double);
 int compute_perf(const std::vector<player> &, int, double);
 
 int main() {
-    int n; scanf("%d\n", &n);
+    // freopen("naive_test.in","r",stdin);
+    // freopen("naive_test.out","w",stdout);
+    int n = 0; fscanf(stdin,"%d\n", &n);
+
+    // std::cerr << n << "\n";
 
     std::vector<player> players(n,player());
     for (int i=0; i<n; i++){
-        scanf("%d %d", &players[i].rating, &players[i].ranking);
+        fscanf(stdin,"%d %d", &players[i].rating, &players[i].ranking);
+        // std::cerr << players[i].rating << " " << players[i].ranking << "\n";
     }
 
     auto t0 = std::chrono::high_resolution_clock::now();
@@ -62,12 +67,19 @@ int main() {
     std::vector<double> delta_adj(n,0.0);
     double t = 0;
     for (int i=0; i<n; i++){
+        // std::cerr << "raw_delta: " << i << " " << players[i].rating << " " << players[i].ranking << "\n";
         seed[i] = get_seed(players, i, players[i].rating);
+        // std::cerr << "seed: " << seed[i] << "\n";
         double g_mean = sqrt(seed[i]*players[i].ranking);
+        // std::cerr << "g_mean: " << g_mean << "\n";
         perf[i] = compute_perf(players, i, players[i].ranking);
+        // std::cerr << "perf: " << perf[i] << "\n";
         delta_raw[i] = delta_adj[i] = (double)(compute_perf(players, i, g_mean)-players[i].rating)/2;
+        
         t += delta_raw[i];
     }
+
+    // std::cerr << "passed raw delta compute\n";
 
     for (int i=0; i<n; i++){
         delta_adj[i] += (-t)/n - 1;
@@ -92,7 +104,7 @@ int main() {
     
     for (int i=0; i<n; i++){
         int fdelta = round(delta_adj[i]);
-        printf("%f %d %f %f %d %d\n", seed[i], perf[i], delta_raw[i], delta_adj[i],
+        fprintf(stdout, "%f %d %f %f %d %d\n", seed[i], perf[i], delta_raw[i], delta_adj[i],
                fdelta, players[i].rating + fdelta);
     }
 }
@@ -104,21 +116,21 @@ void generate_g_table() {
 }
 
 double compute_p(const int i, const int j) {
-    return g[i-j+OFFSET];
+    return g[j-i+OFFSET];
 }
 
 double get_seed(const std::vector<player> &players, int i, double rating) {
     double res = 1;
     for (int j=0; j<(int)players.size(); j++){
-        if (i==j) continue;
+        //if (i==j) continue;
         res += compute_p(players[j].rating, rating);
     }
     return res;
 }
 
 int compute_perf(const std::vector<player> &players, int i, double rank) {
-    int l = -OFFSET, r = +OFFSET;
-    int ans = 0;
+    int l = -OFFSET/2, r = +OFFSET/2;
+    int ans = OFFSET/2;
     while (l<=r) {
         int mid = (l+r)/2;
         if (get_seed(players, i, mid) < rank) {

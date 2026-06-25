@@ -16,3 +16,7 @@ CLAUDE.md
 
 # Build files
 cpp/build/
+
+# IO files
+*.in
+*.out

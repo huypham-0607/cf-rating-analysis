@@ -4,7 +4,7 @@ import json
 
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).parent.parent.parent
+PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
 
 def get_logger(name: str) -> logging.Logger:
     logger = logging.getLogger(name)

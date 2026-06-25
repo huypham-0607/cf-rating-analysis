@@ -1,3 +1,5 @@
+# run "uv sync" & "uv pip install -e ." every time you update packages.
+
 [project]
 name = "cf-rating-analysis"
 version = "0.1.0"
@@ -16,7 +18,8 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["python/src/fetch_cf_data",
             "python/src/utils",
-            "python/src/cleaner"]
+            "python/src/cleaner",
+            "python/src/validation"]
 
 # For Pylance to work properly
 [tool.pyright]
