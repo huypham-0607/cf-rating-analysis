@@ -28,22 +28,25 @@ naive_raw_data = []
 fft_raw_data = []
 
 for contest in contest_list:
-    if (contest["id"] < 2000 or contest["id"] >= 2010):
+    if (contest["id"] != 2001 and (contest["id"] < 1000 or contest["id"] >= 1100)):
         continue
-    delta_list = None
+    data: list
     try:
-        delta_list = load_contest(contest["id"])
+        data = load_contest(contest["id"])
     except Exception as e:
         logger.warning(f"Failed to load contest id (error: {e}) {contest["id"]}, skipping...")
         continue
 
+    delta_list: list[tuple[int,int,int]] = [(t[0], t[1], t[2]) for t in data]
+    handles: list[str] = [t[3] for t in data]
+
     logger.info(f"Executing for contest id: {contest["id"]}")
     naive_result = run_naive_engine(delta_list)
 
-    naive_merged = [(rank, old, delta_final, actual)
-              for (old, rank, actual), (_,_,_,_,delta_final,_) in zip(delta_list, naive_result[1])]
+    naive_merged = [(rank, handle, old, seed, perf, delta_raw, delta_final, actual)
+              for (old, rank, actual), (seed,perf,delta_raw,_,delta_final,_), handle in zip(delta_list, naive_result[2], handles)]
     
-    naive_raw_data.append((contest["id"], naive_result[0], naive_merged))
+    naive_raw_data.append((contest["id"], naive_result[0], naive_result[1], naive_merged))
 
 if naive_raw_data:
     generate_metric(naive_raw_data, NAIVE_DIR)

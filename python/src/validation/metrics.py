@@ -5,7 +5,7 @@
     
     [
      (id, time, [
-                 (rank_1, old_rating_1, pred_delta_1, actual_delta_1),
+                 (rank_1, handle_1, old_rating_1, seed_1, perf_1, pred_delta_1, actual_delta_1),
                  ...
                 ]
      ),
@@ -36,14 +36,15 @@ def generate_metric(data: list, dir: Path):
     per_participant = []
     per_contest = []
 
-    for contest_id, time_ms, delta_list in data:
+    for contest_id, time_ms, correction, delta_list in data:
         n_participants = len(delta_list)
         per_contest.append({
             "id": contest_id,
             "n": n_participants,
-            "time_ms": time_ms
+            "time_ms": time_ms,
+            "correction": correction
         })
-        for rank, old, pred, actual in delta_list:
+        for rank, handle, old, seed, perf, delta_raw, pred, actual in delta_list:
             error = pred - actual
             abs_error = abs(error)
             exact = abs_error == 0
@@ -53,7 +54,11 @@ def generate_metric(data: list, dir: Path):
             per_participant.append({
                 "contest_id": contest_id,
                 "rank": rank,
+                "handle": handle,
                 "old_rating": old,
+                "seed": seed,
+                "performance": perf,
+                "pred_delta_raw": delta_raw,
                 "pred_delta": pred,
                 "actual_delta": actual,
                 "error": error,

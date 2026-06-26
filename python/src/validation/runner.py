@@ -21,7 +21,7 @@ DATA_PATH = PROJECT_ROOT/"data/final"
 
 logger = get_logger(__name__)
 
-def run_naive_engine(delta_list: list[tuple[int,int,int]])-> tuple[float,list]:
+def run_naive_engine(delta_list: list[tuple[int,int,int]])-> tuple[float,int,list]:
     # Parse string to pass into subprocess
     lines = [str(len(delta_list))]
     for rating,  rank, _ in delta_list:
@@ -53,9 +53,11 @@ def run_naive_engine(delta_list: list[tuple[int,int,int]])-> tuple[float,list]:
         new_rating = int(new_rating)
         engine_result.append((seed,perf,delta_raw,delta_adj,delta_final,new_rating));
 
-    exec_time = float(result.stderr.strip())
+    exec_time, offset = result.stderr.strip().split(" ")
+    exec_time = float(exec_time)
+    offset = int(offset)
 
-    return exec_time,engine_result
+    return exec_time,offset,engine_result
 
 
 

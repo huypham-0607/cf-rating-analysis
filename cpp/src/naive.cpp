@@ -6,6 +6,9 @@
 #include <numeric>
 #include <algorithm>
 
+// Bug report: If multiple players are of the same rank, use the lower_bound, not the
+// Upper bound.
+
 /*
     Calculate rating changes for each participant in a contest in O(n^2)
 
@@ -21,6 +24,8 @@
     seed_2 perf_2 delta_raw_2 delta_adjusted_2 delta_final_2 new_rating_2
     ...
     seed_n perf_n delta_raw_n delta_adjusted_n delta_final_n new_rating_n
+
+    Input must be in ranking order
 */
 
 struct player {
@@ -28,6 +33,10 @@ struct player {
     int ranking;
 
     player (int _rating=0, int _ranking=0): rating(_rating), ranking(_ranking) {};
+
+    bool operator<(const player &b) {
+        return ranking < b.ranking;
+    }
 };
 
 constexpr int OFFSET = 10000;
@@ -58,6 +67,20 @@ int main() {
         fscanf(stdin,"%d %d", &players[i].rating, &players[i].ranking);
         // std::cerr << players[i].rating << " " << players[i].ranking << "\n";
     }
+    // std::sort(players.begin(), players.end());
+    
+    int prev = 0;
+    for (int i=1; i<n; i++){
+        if (players[i].ranking!=players[prev].ranking) {
+            for (int idx = std::max(0,prev); idx<i; idx++){
+                players[idx].ranking = i;
+            }
+            prev = i;
+        }
+    }
+    for (int idx=prev; idx<n; idx++){
+        players[idx].ranking = n;
+    }
 
     auto t0 = std::chrono::high_resolution_clock::now();
     generate_g_table();
@@ -73,13 +96,13 @@ int main() {
         double g_mean = sqrt(seed[i]*players[i].ranking);
         // std::cerr << "g_mean: " << g_mean << "\n";
         perf[i] = compute_perf(players, i, players[i].ranking);
-        // std::cerr << "perf: " << perf[i] << "\n";
         delta_raw[i] = delta_adj[i] = (double)(compute_perf(players, i, g_mean)-players[i].rating)/2;
         
         t += delta_raw[i];
     }
 
     // std::cerr << "passed raw delta compute\n";
+    int offset = (-t)/n - 1;
 
     for (int i=0; i<n; i++){
         delta_adj[i] += (-t)/n - 1;
@@ -94,13 +117,14 @@ int main() {
     for (int i=0; i<m; i++){
         t += delta_adj[old_rating_order[i]];
     }
+    offset += std::min(std::max((-t)/m,(double)-10),(double)0);
     for (int i=0; i<n; i++){
         delta_adj[i] += std::min(std::max((-t)/m,(double)-10),(double)0);
     }
     
     auto t1 = std::chrono::high_resolution_clock::now();
     double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
-    fprintf(stderr, "%.3f\n", ms);
+    fprintf(stderr, "%.3f %d\n", ms, offset);
     
     for (int i=0; i<n; i++){
         int fdelta = round(delta_adj[i]);

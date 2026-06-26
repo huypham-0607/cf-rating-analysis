@@ -13,7 +13,7 @@ DATA_PATH = PROJECT_ROOT/"data/final/rating_changes"
 
 logger = get_logger(__name__)
 
-def load_contest(contest_id: int) -> list[tuple[int,int,int]]:
+def load_contest(contest_id: int) -> list[tuple[int,int,int,str]]:
     rating_changes = []
     try:
         rating_changes = _load(DATA_PATH/f"{contest_id}.json")
@@ -22,12 +22,13 @@ def load_contest(contest_id: int) -> list[tuple[int,int,int]]:
     
     logger.info(f"Fetched rating changes for id: {contest_id}")
     
-    delta_list: list[tuple[int,int,int]] = []
+    delta_list: list[tuple[int,int,int,str]] = []
 
     for rating_change in rating_changes:
         delta_list.append((rating_change["trueOldRating"],
                            rating_change["rank"],
-                           rating_change["trueNewRating"] - rating_change["trueOldRating"]))
+                           rating_change["trueNewRating"] - rating_change["trueOldRating"],
+                           rating_change["handle"]))
 
     logger.info(f"rating changes count: {len(delta_list)}")
 
