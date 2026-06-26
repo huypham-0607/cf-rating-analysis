@@ -6,8 +6,13 @@
 #include <numeric>
 #include <algorithm>
 
-// Bug report: If multiple players are of the same rank, use the lower_bound, not the
-// Upper bound.
+/*
+    Bug report: Issues to fix:
+        - High inaccuracy for highly ranked players
+        - High inaccuracy for low rated players
+        - High inaccuracy for recent contests
+
+*/
 
 /*
     Calculate rating changes for each participant in a contest in O(n^2)
