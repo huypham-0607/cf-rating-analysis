@@ -8,10 +8,10 @@
 
 /*
     Bug report: Issues to fix:
-        - High inaccuracy for highly ranked players
-        - High inaccuracy for low rated players
-        - High inaccuracy for recent contests
-
+        - High inaccuracy for highly ranked players (top 1-5) (Not substantial/most important issue)
+        - Massively underestimate low rated players (Around 0-500 rated players, especially <100) (also not the most important since <500 is an anomaly)
+        - High inaccuracy for recent contests (Consistently overpredict by 5-15 rating points in positive direction) (only started at around rank 1500 onwards, and continues all the way to lowest ranked)
+    If you can, look at the naive_analysis graph for more info.
 */
 
 /*
@@ -44,8 +44,9 @@ struct player {
     }
 };
 
-constexpr int OFFSET = 10000;
-constexpr int G_SIZE = 20001;
+constexpr int OFFSET = 16000;
+constexpr int MAX_PERF = 8000;
+constexpr int G_SIZE = 32001;
 double g[G_SIZE];
 
 // Generate reference table g (probabiltiy for i to beat j with rating delta d).
@@ -101,30 +102,30 @@ int main() {
         double g_mean = sqrt(seed[i]*players[i].ranking);
         // std::cerr << "g_mean: " << g_mean << "\n";
         perf[i] = compute_perf(players, i, players[i].ranking);
-        delta_raw[i] = delta_adj[i] = (double)(compute_perf(players, i, g_mean)-players[i].rating)/2;
+        delta_raw[i] = delta_adj[i] = (compute_perf(players, i, g_mean)-players[i].rating)/2;
         
         t += delta_raw[i];
     }
 
     // std::cerr << "passed raw delta compute\n";
-    int offset = (-t)/n - 1;
+    int offset = (int)((-t)/n - 1);
 
     for (int i=0; i<n; i++){
-        delta_adj[i] += (-t)/n - 1;
+        delta_adj[i] += (int)((-t)/n - 1);
     }
     std::vector<int> old_rating_order(n);
     std::iota(old_rating_order.begin(), old_rating_order.end(), 0);
     std::sort(old_rating_order.begin(), old_rating_order.end(),
               [&](int i, int j){return (players[i].rating > players[j].rating);});
-    int m = std::min(n,4*(int)ceil(sqrt(n)));
+    int m = std::min(n,4*(int)round(sqrt(n)));
 
     t = 0;
     for (int i=0; i<m; i++){
         t += delta_adj[old_rating_order[i]];
     }
-    offset += std::min(std::max((-t)/m,(double)-10),(double)0);
+    offset += std::min(std::max((int)(-t)/m,(int)-10),(int)0);
     for (int i=0; i<n; i++){
-        delta_adj[i] += std::min(std::max((-t)/m,(double)-10),(double)0);
+        delta_adj[i] += std::min(std::max((int)(-t)/m,(int)-10),(int)0);
     }
     
     auto t1 = std::chrono::high_resolution_clock::now();
@@ -151,23 +152,23 @@ double compute_p(const int i, const int j) {
 double get_seed(const std::vector<player> &players, int i, double rating) {
     double res = 1;
     for (int j=0; j<(int)players.size(); j++){
-        //if (i==j) continue;
+        if (i==j) continue;
         res += compute_p(players[j].rating, rating);
     }
     return res;
 }
 
 int compute_perf(const std::vector<player> &players, int i, double rank) {
-    int l = -OFFSET/2, r = +OFFSET/2;
-    int ans = OFFSET/2;
+    int l = 0, r = +MAX_PERF;
+    int ans = 0;
     while (l<=r) {
         int mid = (l+r)/2;
-        if (get_seed(players, i, mid) < rank) {
+        if (get_seed(players, i, mid) >= rank) {
             ans = mid;
-            r = mid-1;
+            l = mid+1;
         }
         else {
-            l = mid+1;
+            r = mid-1;
         }
     }
     return ans;

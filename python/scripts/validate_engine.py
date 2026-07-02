@@ -28,7 +28,7 @@ naive_raw_data = []
 fft_raw_data = []
 
 for contest in contest_list:
-    if (contest["id"] != 2001 and (contest["id"] < 1000 or contest["id"] >= 1100)):
+    if ((contest["id"] < 1585 or contest["id"] >= 1586)):
         continue
     data: list
     try:
