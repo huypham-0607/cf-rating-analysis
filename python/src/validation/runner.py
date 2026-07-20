@@ -1,69 +1,103 @@
-'''
-    Load and curate data to feed to rating engine.
-    Filter out contests with Id < 600 (Old contests uses different rating logic)
-    
-    Takes input as list[tuple[int,int,int]] in format of loader.py output
-    
-    Output a tuple of [int,list] of following format:
-    
-    (time, [
-        seed, perf, delta_raw, delta_adj, delta_final, new_rating
-    ])
-'''
+"""
+Run a compiled rating engine (naive or fft) on a list of (rating, rank, delta) tuples.
 
-import json
+The engine binary is invoked as a subprocess using the shared stdin/stdout protocol:
+  stdin:  n\\nrating_1 rank_1\\n...\\nrating_n rank_n
+  stdout: seed perf raw_delta adj_delta final_delta new_rating  (one line per participant)
+  stderr: runtime_ms correction_offset
+"""
+
 import subprocess
-
 from pathlib import Path
-from utils import get_logger, _load, PROJECT_ROOT
+from utils import PROJECT_ROOT
 
-DATA_PATH = PROJECT_ROOT/"data/final"
+_BINARY_DIR = PROJECT_ROOT / "cpp" / "build"
+_VALID_ENGINES = {"naive", "fft"}
 
-logger = get_logger(__name__)
 
-def run_naive_engine(delta_list: list[tuple[int,int,int]])-> tuple[float,int,list]:
-    # Parse string to pass into subprocess
-    lines = [str(len(delta_list))]
-    for rating,  rank, _ in delta_list:
+def run_engine(engine: str, delta_list: list[tuple[int, int, int]]) -> tuple[float, int, list]:
+    """
+    Run the specified engine on delta_list.
+
+    Parameters
+    ----------
+    engine : str
+        "naive" or "fft"
+    delta_list : list of (true_old_rating, rank, actual_delta)
+
+    Returns
+    -------
+    (runtime_ms, correction_offset, results)
+    results : list of (seed, perf, raw_delta, adj_delta, final_delta, new_rating)
+    """
+    if engine not in _VALID_ENGINES:
+        raise ValueError(f"Unknown engine '{engine}'. Valid options: {_VALID_ENGINES}")
+
+    binary = _BINARY_DIR / engine
+    if not binary.exists():
+        raise FileNotFoundError(
+            f"Engine binary not found: {binary}\n"
+            f"Build with: cmake -S cpp -B cpp/build -DCMAKE_BUILD_TYPE=Release && cmake --build cpp/build -j"
+        )
+
+    n = len(delta_list)
+    lines = [str(n)]
+    for rating, rank, _ in delta_list:
         lines.append(f"{rating} {rank}")
-    formatted_input = "\n".join(lines)
+    input_text = "\n".join(lines)
 
-    result = None
-    try:
-        result = subprocess.run([str(Path(PROJECT_ROOT/"cpp/build/naive"))],
-                                capture_output=True,
-                                text=True,
-                                check=True,
-                                input=formatted_input)
-    except subprocess.CalledProcessError as e:
-        logger.error(f"naive failed (exit {e.returncode}): {e.stderr}")
-        raise e
+    result = subprocess.run(
+        [str(binary)],
+        input=input_text,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
 
-    logger.info(result.stderr.strip())
-    # Parse output created by subprocess.
-    lines = result.stdout.strip().split("\n")
-    engine_result = []
-    for line in lines:
-        seed, perf, delta_raw, delta_adj, delta_final, new_rating = line.split()
-        seed = float(seed)
-        perf = int(perf)
-        delta_raw = float(delta_raw)
-        delta_adj = float(delta_adj)
-        delta_final = int(delta_final)
-        new_rating = int(new_rating)
-        engine_result.append((seed,perf,delta_raw,delta_adj,delta_final,new_rating));
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"Engine '{engine}' failed (exit {result.returncode}):\n{result.stderr}"
+        )
 
-    exec_time, offset = result.stderr.strip().split(" ")
-    exec_time = float(exec_time)
-    offset = int(offset)
+    output_lines = result.stdout.strip().split("\n")
+    if len(output_lines) != n:
+        raise RuntimeError(
+            f"Engine '{engine}' returned {len(output_lines)} rows for {n} participants"
+        )
 
-    return exec_time,offset,engine_result
+    parsed = []
+    for row_idx, line in enumerate(output_lines):
+        parts = line.split()
+        if len(parts) != 6:
+            raise RuntimeError(
+                f"Engine '{engine}' row {row_idx}: expected 6 fields, got {len(parts)}: {line!r}"
+            )
+        try:
+            parsed.append((
+                float(parts[0]),   # seed
+                int(parts[1]),     # perf
+                float(parts[2]),   # raw_delta
+                float(parts[3]),   # adj_delta
+                int(parts[4]),     # final_delta
+                int(parts[5]),     # new_rating
+            ))
+        except ValueError as exc:
+            raise RuntimeError(
+                f"Engine '{engine}' row {row_idx}: parse error: {exc}: {line!r}"
+            ) from exc
+
+    stderr_parts = result.stderr.strip().split()
+    if len(stderr_parts) < 2:
+        raise RuntimeError(f"Engine '{engine}': unexpected stderr: {result.stderr!r}")
+    runtime_ms = float(stderr_parts[0])
+    correction  = int(stderr_parts[1])
+
+    return runtime_ms, correction, parsed
 
 
+def run_naive_engine(delta_list: list[tuple[int, int, int]]) -> tuple[float, int, list]:
+    return run_engine("naive", delta_list)
 
 
-
-    
-
-    
-    
+def run_fft_engine(delta_list: list[tuple[int, int, int]]) -> tuple[float, int, list]:
+    return run_engine("fft", delta_list)

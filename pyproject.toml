@@ -1,16 +1,21 @@
-# run "uv sync" & "uv pip install -e ." every time you update packages.
+# run "uv sync --dev" after updating packages.
 
 [project]
 name = "cf-rating-analysis"
 version = "0.1.0"
-description = "Add your description here"
+description = "Analysis and accelerated simulation of the Codeforces rating system"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.11"
 dependencies = [
-    "matplotlib>=3.11.0",
-    "numpy>=2.4.6",
-    "pandas>=3.0.3",
-    "requests>=2.34.2",
+    "matplotlib>=3.7",
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "requests>=2.28",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
 ]
 
 [build-system]
@@ -23,6 +28,5 @@ packages = ["python/src/fetch_cf_data",
             "python/src/cleaner",
             "python/src/validation"]
 
-# For Pylance to work properly
 [tool.pyright]
 extraPaths = ["python/src"]

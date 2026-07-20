@@ -1,16 +1,14 @@
-'''
-    Clean data pulled from codeforces.
+"""
+Clean data pulled from Codeforces.
 
-    user_metadata.json: A dictionary of metadata: {init_rating:int, use_new_system:bool}
-    delta_hist.json: A dictionary of handle: rating_history
-
-    rating_history: A list of {contest_id:int, rank:int, old_rating:int, new_rating:int}
-
-    Add true rating to rating changes afterwards
-'''
+Produces:
+  cleaned/contest_list.json          — deduplicated contest list
+  cleaned/rating_changes/<id>.json   — per-contest rating changes
+  cleaned/delta_hist.json            — per-handle rating history
+  cleaned/init_rating.json           — per-handle initial rating metadata
+  final/rating_changes/<id>.json     — rating changes annotated with trueOldRating
+"""
 import json
-import logging
-import sys 
 
 from utils import get_logger
 from pathlib import Path

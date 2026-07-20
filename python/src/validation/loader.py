@@ -1,35 +1,28 @@
-'''
-    Load and curate data to feed to rating engine.
-    Filter out contests with Id < 600 (Old contests uses different rating logic)
-    Output a list of (old_rating, rank, actual_delta) tuple
-'''
+"""
+Load contest rating-change data and format it for the engine runner.
 
-import json
+Returns a list of (trueOldRating, rank, actual_delta, handle) tuples
+read from data/final/rating_changes/<contest_id>.json.
+"""
 
 from pathlib import Path
 from utils import get_logger, _load, PROJECT_ROOT
 
-DATA_PATH = PROJECT_ROOT/"data/final/rating_changes"
+DATA_PATH = PROJECT_ROOT / "data" / "final" / "rating_changes"
 
 logger = get_logger(__name__)
 
-def load_contest(contest_id: int) -> list[tuple[int,int,int,str]]:
-    rating_changes = []
-    try:
-        rating_changes = _load(DATA_PATH/f"{contest_id}.json")
-    except Exception as e:
-        raise e
-    
-    logger.info(f"Fetched rating changes for id: {contest_id}")
-    
-    delta_list: list[tuple[int,int,int,str]] = []
 
-    for rating_change in rating_changes:
-        delta_list.append((rating_change["trueOldRating"],
-                           rating_change["rank"],
-                           rating_change["trueNewRating"] - rating_change["trueOldRating"],
-                           rating_change["handle"]))
-
-    logger.info(f"rating changes count: {len(delta_list)}")
-
-    return delta_list
+def load_contest(contest_id: int) -> list[tuple[int, int, int, str]]:
+    """Return [(trueOldRating, rank, actual_delta, handle), ...] for a contest."""
+    rating_changes = _load(DATA_PATH / f"{contest_id}.json")
+    logger.info(f"Loaded {len(rating_changes)} rating changes for contest {contest_id}")
+    return [
+        (
+            rc["trueOldRating"],
+            rc["rank"],
+            rc["trueNewRating"] - rc["trueOldRating"],
+            rc["handle"],
+        )
+        for rc in rating_changes
+    ]

@@ -1,21 +1,45 @@
 # Local development notes
 init-info.md
 validation-plan.md
+dev-notes.md
+docs/private-report.md
 
-# Misc
-data/*
-!data/.gitkeep
-
-# Development tools
+# Claude project files
 CLAUDE.md
+.claude
+
+# Misc editor files
 *.cph
-.venv
-*__pycache__
 *.vscode
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
 
 # Build files
 cpp/build/
-
-# IO files
-*.in
+*.o
 *.out
+*.exe
+
+# IO test files
+*.in
+
+# Data (large, fetched on demand)
+data/*
+!data/.gitkeep
+
+# Local temporary results
+results/tmp/
+
+# Development virtual environment
+.venv

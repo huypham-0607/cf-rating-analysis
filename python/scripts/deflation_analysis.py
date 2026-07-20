@@ -1,14 +1,14 @@
-'''
+"""
 Deflation analysis across old-era (1000-1585) and new-era (>2000) contests.
 
 For each contest, computes:
   - sum / mean of CF actual trueDelta
   - sum / mean of our engine's predicted delta
-  - breakdown by stage (stage-0, stage-1+, old-sys)
+  - breakdown by stage (s1–s6, old-sys)
 
-Caches per-participant results in data/validation/deflation/per_participant.csv
-Outputs a per-contest summary to data/validation/deflation/summary.csv
-'''
+Caches per-participant results in data/validation/deflation/per_participant.csv.
+Outputs a per-contest summary to data/validation/deflation/summary.csv.
+"""
 
 import csv
 import json
@@ -43,7 +43,7 @@ def get_stage(true_old: int, old: int) -> int:
 
 
 def load_cache() -> dict[int, list[dict]]:
-    '''Returns {contest_id: [row, ...]} from cache CSV.'''
+    """Return {contest_id: [row, ...]} from the on-disk cache CSV."""
     if not CACHE_PATH.exists():
         return {}
     by_contest: dict[int, list[dict]] = {}

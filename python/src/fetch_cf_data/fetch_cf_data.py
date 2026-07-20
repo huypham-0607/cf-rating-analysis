@@ -1,33 +1,21 @@
 """
-    Fetch contest data from Codeforces and store it json format.
+Fetch contest data from Codeforces API and store as JSON.
 
-    Fetches data from two endpoints:
-    - api/contest.list
-    - api/contest.ratingChanges
+Fetches from two endpoints:
+  contest.list          → data/raw/contest_list.json
+  contest.ratingChanges → data/raw/rating_changes/<id>.json
 
-    Store in data/raw in json format.
-
-    From Codeforces API website:
-    
-    "Each method call returns a JSON-object with three possible fields: status, comment and result.
-        - Status is either "OK" or "FAILED".
-        - If status is "FAILED" then comment contains the reason why the request failed.
-        - If status is "OK", then there is no comment.
-        - If status is "OK" then result contains method-dependent JSON-element which
-          will be described for each method separately. If status is "FAILED", then there
-          is no result.
-
-    Contest object: https://codeforces.com/apiHelp/objects#Contest
-    Rating changes object: https://codeforces.com/apiHelp/objects#RatingChange
+CF API response format: {status, comment?, result?}. Status is "OK" or
+"FAILED". On "OK", result contains the method payload. On "FAILED", comment
+describes the error. See https://codeforces.com/apiHelp for full reference.
 """
 
 import requests
 import json
 import time
-import logging
 from utils import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 from pathlib import Path
 

@@ -1,27 +1,22 @@
-'''
-    Clean data pulled from codeforces
-'''
-import json
-import logging
-import sys 
+"""
+Clean raw data pulled from Codeforces API.
+
+Runs all cleaning steps in sequence: contest list, rating changes, delta
+history validation, and trueRating annotation.
+"""
 
 from cleaner import DataCleaner
 from utils import get_logger
-from pathlib import Path
 
 logger = get_logger(__name__)
-
-PROJECT_ROOT = Path(__file__).parent.parent.parent
-RAW_DATA = PROJECT_ROOT/"data/raw"
-PROCESSED_DATA = PROJECT_ROOT/"data/processed"
 
 cleaner = DataCleaner()
 
 cleaner.clean_contest_data(True)
-logger.info(f"Finished cleaning contest_list data.")
+logger.info("Finished cleaning contest_list data.")
 cleaner.clean_rating_change_data(True)
-logger.info(f"Finished cleaning rating_change data.")
+logger.info("Finished cleaning rating_change data.")
 cleaner.create_and_validate_delta_hist(True)
-logger.info(f"Finished validating delta_history.")
+logger.info("Finished validating delta_history.")
 cleaner.add_contest_true_rating()
-logger.info(f"Finished adding trueRating to all contest rating changes.")
+logger.info("Finished adding trueRating to all contest rating changes.")

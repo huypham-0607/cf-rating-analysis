@@ -1,175 +1,149 @@
-#include <stdio.h>
-#include <iostream>
-#include <vector>
-#include <cmath>
-#include <chrono>
-#include <numeric>
+/**
+ * Direct O(n^2) implementation of the publicly documented Codeforces rating algorithm.
+ *
+ * Expected seeds are computed via pairwise Elo probabilities — O(n) per participant,
+ * O(n^2) total. Performance-rating lookup uses binary search over the seed function.
+ * This engine serves as the correctness baseline for the FFT implementation.
+ *
+ * Input (stdin):
+ *   n
+ *   rating_1 rank_1
+ *   ...
+ *   rating_n rank_n
+ *   (participants in rank order; duplicate ranks allowed)
+ *
+ * Output (stdout):
+ *   One line per participant:
+ *   seed performance_rating raw_delta adjusted_delta final_delta new_rating
+ *
+ * Timing (stderr):
+ *   runtime_ms correction_offset
+ */
+
 #include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <cstdio>
+#include <numeric>
+#include <vector>
 
-/*
-    Bug report: Issues to fix:
-        - High inaccuracy for highly ranked players (top 1-5) (Not substantial/most important issue)
-        - Massively underestimate low rated players (Around 0-500 rated players, especially <100) (also not the most important since <500 is an anomaly)
-        - High inaccuracy for recent contests (Consistently overpredict by 5-15 rating points in positive direction) (only started at around rank 1500 onwards, and continues all the way to lowest ranked)
-    If you can, look at the naive_analysis graph for more info.
-*/
-
-/*
-    Calculate rating changes for each participant in a contest in O(n^2)
-
-    Input format:
-    n
-    r_old_1 rank_1
-    r_old_2 rank_2
-    ...
-    r_old_n rank_n
-
-    Output format:
-    seed_1 perf_1 delta_raw_1 delta_adjusted_1 delta_final_1 new_rating_1
-    seed_2 perf_2 delta_raw_2 delta_adjusted_2 delta_final_2 new_rating_2
-    ...
-    seed_n perf_n delta_raw_n delta_adjusted_n delta_final_n new_rating_n
-
-    Input must be in ranking order
-*/
-
-struct player {
+struct Participant {
     int rating;
-    int ranking;
-
-    player (int _rating=0, int _ranking=0): rating(_rating), ranking(_ranking) {};
-
-    bool operator<(const player &b) {
-        return ranking < b.ranking;
-    }
+    int rank;
+    Participant(int r = 0, int k = 0) : rating(r), rank(k) {}
 };
 
-constexpr int OFFSET = 16000;
-constexpr int MAX_PERF = 8000;
-constexpr int G_SIZE = 32001;
-double g[G_SIZE];
+// Precomputed win-probability lookup table.
+// g[d + OFFSET] = P(player with rating d higher than opponent beats opponent)
+//               = 1 / (1 + 10^(-d/400))
+constexpr int PROB_OFFSET = 16000;
+constexpr int PROB_SIZE   = 32001;
+constexpr int MAX_PERF    = 8000;
+static double g[PROB_SIZE];
 
-// Generate reference table g (probabiltiy for i to beat j with rating delta d).
-void generate_g_table();
-
-// Calculate P_i_j .ie Probability that player i will beat player j in contest.
-double compute_p(const int, const int);
-
-// Calculate expected seed for player i with current rating r.
-double get_seed(const std::vector<player> &, int, double); 
-
-// Calculate performance (initial rating where delta equals 0) for player i at rank rnk.
-int compute_perf(const std::vector<player> &, int, double);
-
-int main() {
-    // freopen("naive_test.in","r",stdin);
-    // freopen("naive_test.out","w",stdout);
-    int n = 0; fscanf(stdin,"%d\n", &n);
-
-    // std::cerr << n << "\n";
-
-    std::vector<player> players(n,player());
-    for (int i=0; i<n; i++){
-        fscanf(stdin,"%d %d", &players[i].rating, &players[i].ranking);
-        // std::cerr << players[i].rating << " " << players[i].ranking << "\n";
-    }
-    // std::sort(players.begin(), players.end());
-    
-    int prev = 0;
-    for (int i=1; i<n; i++){
-        if (players[i].ranking!=players[prev].ranking) {
-            for (int idx = std::max(0,prev); idx<i; idx++){
-                players[idx].ranking = i;
-            }
-            prev = i;
-        }
-    }
-    for (int idx=prev; idx<n; idx++){
-        players[idx].ranking = n;
-    }
-
-    auto t0 = std::chrono::high_resolution_clock::now();
-    generate_g_table();
-    std::vector<double> seed(n,0.0);
-    std::vector<int> perf(n,0);
-    std::vector<double> delta_raw(n,0.0);
-    std::vector<double> delta_adj(n,0.0);
-    double t = 0;
-    for (int i=0; i<n; i++){
-        // std::cerr << "raw_delta: " << i << " " << players[i].rating << " " << players[i].ranking << "\n";
-        seed[i] = get_seed(players, i, players[i].rating);
-        // std::cerr << "seed: " << seed[i] << "\n";
-        double g_mean = sqrt(seed[i]*players[i].ranking);
-        // std::cerr << "g_mean: " << g_mean << "\n";
-        perf[i] = compute_perf(players, i, players[i].ranking);
-        delta_raw[i] = delta_adj[i] = (compute_perf(players, i, g_mean)-players[i].rating)/2;
-        
-        t += delta_raw[i];
-    }
-
-    // std::cerr << "passed raw delta compute\n";
-    int offset = (int)((-t)/n - 1);
-
-    for (int i=0; i<n; i++){
-        delta_adj[i] += (int)((-t)/n - 1);
-    }
-    std::vector<int> old_rating_order(n);
-    std::iota(old_rating_order.begin(), old_rating_order.end(), 0);
-    std::sort(old_rating_order.begin(), old_rating_order.end(),
-              [&](int i, int j){return (players[i].rating > players[j].rating);});
-    int m = std::min(n,4*(int)round(sqrt(n)));
-
-    t = 0;
-    for (int i=0; i<m; i++){
-        t += delta_adj[old_rating_order[i]];
-    }
-    offset += std::min(std::max((int)(-t)/m,(int)-10),(int)0);
-    for (int i=0; i<n; i++){
-        delta_adj[i] += std::min(std::max((int)(-t)/m,(int)-10),(int)0);
-    }
-    
-    auto t1 = std::chrono::high_resolution_clock::now();
-    double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
-    fprintf(stderr, "%.3f %d\n", ms, offset);
-    
-    for (int i=0; i<n; i++){
-        int fdelta = round(delta_adj[i]);
-        fprintf(stdout, "%f %d %f %f %d %d\n", seed[i], perf[i], delta_raw[i], delta_adj[i],
-               fdelta, players[i].rating + fdelta);
-    }
+static void build_prob_table() {
+    for (int i = 0; i < PROB_SIZE; i++)
+        g[i] = 1.0 / (1.0 + std::pow(10.0, (double)(i - PROB_OFFSET) / 400.0));
 }
 
-void generate_g_table() {
-    for (int i=0; i<G_SIZE; i++){
-        g[i] = (double)1/(1+pow(10,(double)(i-OFFSET)/400));
+// P(player with rating b beats player with rating a).
+static inline double win_prob(int a, int b) {
+    return g[b - a + PROB_OFFSET];
+}
+
+// Expected seed of a hypothetical player at `rating`, excluding participant `self`.
+static double expected_seed(const std::vector<Participant>& ps, int self, double rating) {
+    double s = 1.0;
+    for (int j = 0; j < (int)ps.size(); j++) {
+        if (j == self) continue;
+        s += win_prob(ps[j].rating, (int)rating);
     }
+    return s;
 }
 
-double compute_p(const int i, const int j) {
-    return g[j-i+OFFSET];
-}
-
-double get_seed(const std::vector<player> &players, int i, double rating) {
-    double res = 1;
-    for (int j=0; j<(int)players.size(); j++){
-        if (i==j) continue;
-        res += compute_p(players[j].rating, rating);
-    }
-    return res;
-}
-
-int compute_perf(const std::vector<player> &players, int i, double rank) {
-    int l = 0, r = +MAX_PERF;
-    int ans = 0;
-    while (l<=r) {
-        int mid = (l+r)/2;
-        if (get_seed(players, i, mid) >= rank) {
+// Largest integer rating R in [0, MAX_PERF] where expected_seed(R) >= target.
+static int performance_rating(const std::vector<Participant>& ps, int self, double target) {
+    int lo = 0, hi = MAX_PERF, ans = 0;
+    while (lo <= hi) {
+        int mid = (lo + hi) / 2;
+        if (expected_seed(ps, self, mid) >= target) {
             ans = mid;
-            l = mid+1;
-        }
-        else {
-            r = mid-1;
+            lo  = mid + 1;
+        } else {
+            hi = mid - 1;
         }
     }
     return ans;
+}
+
+int main() {
+    int n = 0;
+    if (std::fscanf(stdin, "%d", &n) != 1 || n <= 0) {
+        std::fprintf(stderr, "error: invalid participant count\n");
+        return 1;
+    }
+
+    std::vector<Participant> ps(n);
+    for (int i = 0; i < n; i++) {
+        if (std::fscanf(stdin, "%d %d", &ps[i].rating, &ps[i].rank) != 2) {
+            std::fprintf(stderr, "error: malformed input at participant %d\n", i);
+            return 1;
+        }
+    }
+
+    // Normalize tied ranks to upper-bound (same as CF: all tied participants
+    // receive the rank of the last among them).
+    {
+        int prev = 0;
+        for (int i = 1; i < n; i++) {
+            if (ps[i].rank != ps[prev].rank) {
+                for (int k = prev; k < i; k++) ps[k].rank = i;
+                prev = i;
+            }
+        }
+        for (int k = prev; k < n; k++) ps[k].rank = n;
+    }
+
+    auto t0 = std::chrono::high_resolution_clock::now();
+
+    build_prob_table();
+
+    std::vector<double> seed(n), raw_delta(n), adj_delta(n);
+    double sum_raw = 0.0;
+
+    for (int i = 0; i < n; i++) {
+        seed[i]      = expected_seed(ps, i, ps[i].rating);
+        double m     = std::sqrt(seed[i] * ps[i].rank);
+        raw_delta[i] = adj_delta[i] = (performance_rating(ps, i, m) - ps[i].rating) / 2.0;
+        sum_raw     += raw_delta[i];
+    }
+
+    // Correction 1: keep total delta <= 0 (sum correction).
+    int sc1 = (int)((-sum_raw) / n - 1);
+    for (int i = 0; i < n; i++) adj_delta[i] += sc1;
+
+    // Correction 2: keep top-player group sum <= 0 (top-player correction).
+    int m = std::min(n, 4 * (int)std::round(std::sqrt(n)));
+    std::vector<int> by_rating(n);
+    std::iota(by_rating.begin(), by_rating.end(), 0);
+    std::sort(by_rating.begin(), by_rating.end(),
+              [&](int a, int b) { return ps[a].rating > ps[b].rating; });
+
+    double sum_top = 0.0;
+    for (int i = 0; i < m; i++) sum_top += adj_delta[by_rating[i]];
+    int sc2 = std::min(std::max((int)(-sum_top / m), -10), 0);
+    for (int i = 0; i < n; i++) adj_delta[i] += sc2;
+
+    auto t1  = std::chrono::high_resolution_clock::now();
+    double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+    std::fprintf(stderr, "%.3f %d\n", ms, sc1 + sc2);
+
+    for (int i = 0; i < n; i++) {
+        int final_delta = (int)std::round(adj_delta[i]);
+        std::fprintf(stdout, "%f %d %f %f %d %d\n",
+                     seed[i], performance_rating(ps, i, ps[i].rank),
+                     raw_delta[i], adj_delta[i],
+                     final_delta, ps[i].rating + final_delta);
+    }
+    return 0;
 }

@@ -1,10 +1,14 @@
+"""
+Shared utilities: project root path, logger factory, and JSON loader.
+"""
+import json
 import logging
 import sys
-import json
 
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
+
 
 def get_logger(name: str) -> logging.Logger:
     logger = logging.getLogger(name)
@@ -15,29 +19,8 @@ def get_logger(name: str) -> logging.Logger:
     logger.setLevel(logging.INFO)
     return logger
 
-def _load(dir: Path):
-    try:
-        with open(dir,'r') as f:
-            data = json.load(f)
-            return data
-    except PermissionError as e:
-        raise e
-    except IsADirectoryError as e:
-        raise e
-    except FileNotFoundError as e:
-        raise e
-    except Exception as e:
-        raise e
 
-def _save(dir: Path, data)->None:
-    try:
-        with open(dir,'w') as f:
-            f.write(json.dumps(data))
-    except PermissionError as e:
-        raise e
-    except FileNotFoundError as e:
-        raise e
-    except IsADirectoryError as e:
-        raise e
-    except Exception as e:
-        raise e
+def _load(path: Path) -> list | dict:
+    """Load and return parsed JSON from path; raises on any IO or parse error."""
+    with open(path, "r") as f:
+        return json.load(f)
